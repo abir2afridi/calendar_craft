@@ -11,7 +11,8 @@ class AppConstants {
   // Notification channels
   static const String notificationChannelId = 'calendar_notifications';
   static const String notificationChannelName = 'Calendar Notifications';
-  static const String notificationChannelDescription = 'Notifications for calendar events and reminders';
+  static const String notificationChannelDescription =
+      'Notifications for calendar events and reminders';
 
   // Default values
   static const int defaultReminderMinutes = 15;
@@ -48,6 +49,7 @@ class AppConstants {
 
   // Settings keys
   static const String themeKey = 'theme_mode';
+  static const String visualThemeKey = 'visual_theme';
   static const String notificationsKey = 'notifications_enabled';
   static const String defaultReminderKey = 'default_reminder_minutes';
   static const String firstLaunchKey = 'first_launch';

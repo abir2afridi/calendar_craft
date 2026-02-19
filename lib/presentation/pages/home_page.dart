@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:table_calendar/table_calendar.dart';
-import 'package:calendar_craft/presentation/providers/event_provider.dart';
-import 'package:calendar_craft/presentation/widgets/calendar_widget.dart';
-import 'package:calendar_craft/presentation/widgets/event_list_widget.dart';
-import 'package:calendar_craft/presentation/widgets/floating_action_button_widget.dart';
+import '../widgets/calendar_widget.dart';
+import '../widgets/event_list_widget.dart';
+import '../widgets/floating_action_button_widget.dart';
+import '../providers/event_provider.dart';
+import '../providers/theme_provider.dart';
+import 'add_event_page.dart';
+import 'settings_page.dart';
+import 'search_page.dart';
+import 'daily_agenda_page.dart';
 
 class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
@@ -21,7 +26,6 @@ class _HomePageState extends ConsumerState<HomePage> {
   @override
   void initState() {
     super.initState();
-    // Load events when the page is initialized
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(eventProvider.notifier).loadEvents();
     });
@@ -29,7 +33,7 @@ class _HomePageState extends ConsumerState<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    final eventsAsync = ref.watch(eventsForDateProvider(_selectedDay));
+    final visualTheme = ref.watch(visualThemeProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -37,11 +41,19 @@ class _HomePageState extends ConsumerState<HomePage> {
         actions: [
           IconButton(
             icon: const Icon(Icons.search),
-            onPressed: () => _showSearchDialog(context),
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (context) => const SearchPage()),
+              );
+            },
           ),
           IconButton(
             icon: const Icon(Icons.settings),
-            onPressed: () => _navigateToSettings(context),
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (context) => const SettingsPage()),
+              );
+            },
           ),
         ],
       ),
@@ -57,149 +69,110 @@ class _HomePageState extends ConsumerState<HomePage> {
                 _focusedDay = focusedDay;
               });
             },
-            onFormatChanged: (format) {
-              setState(() {
-                _calendarFormat = format;
-              });
-            },
             onPageChanged: (focusedDay) {
               setState(() {
                 _focusedDay = focusedDay;
               });
             },
+            onFormatChanged: (CalendarFormat format) {
+              setState(() {
+                _calendarFormat = format;
+              });
+            },
           ),
-          const SizedBox(height: 16),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Events',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontFamily: visualTheme == VisualTheme.cyber
+                        ? 'Orbitron'
+                        : null,
+                  ),
+                ),
+                TextButton.icon(
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) =>
+                            DailyAgendaPage(date: _selectedDay),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.calendar_view_day),
+                  label: const Text('View Agenda'),
+                ),
+              ],
+            ),
+          ),
+          const Divider(),
           Expanded(
-            child: eventsAsync.when(
-              data: (events) {
-                if (events.isEmpty) {
-                  return _buildEmptyState();
-                }
-                return EventListWidget(
-                  events: events,
-                  onEventTap: (event) => _showEventDetails(context, event),
-                  onEventEdit: (event) => _editEvent(context, event),
-                  onEventDelete: (event) => _deleteEvent(context, event),
+            child: EventListWidget(
+              events: ref
+                  .watch(eventProvider)
+                  .events
+                  .where((e) => isSameDay(e.date, _selectedDay))
+                  .toList(),
+              onEventTap: (event) {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => AddEventPage(event: event),
+                  ),
                 );
               },
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (error, stack) =>
-                  Center(child: Text('Error loading events: $error')),
+              onEventEdit: (event) {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => AddEventPage(event: event),
+                  ),
+                );
+              },
+              onEventDelete: (event) async {
+                final confirm = await showDialog<bool>(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: const Text('Delete Event'),
+                    content: const Text(
+                      'Are you sure you want to delete this event?',
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.of(context).pop(false),
+                        child: const Text('Cancel'),
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.of(context).pop(true),
+                        child: const Text('Delete'),
+                      ),
+                    ],
+                  ),
+                );
+
+                if (confirm == true) {
+                  await ref.read(eventProvider.notifier).deleteEvent(event.id);
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Event deleted')),
+                    );
+                  }
+                }
+              },
             ),
           ),
         ],
       ),
       floatingActionButton: FloatingActionButtonWidget(
-        onPressed: () => _addEvent(context),
-      ),
-    );
-  }
-
-  Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.event_available, size: 64, color: Colors.grey[400]),
-          const SizedBox(height: 16),
-          Text(
-            'No events for this day',
-            style: TextStyle(fontSize: 18, color: Colors.grey[600]),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Tap the + button to add an event',
-            style: TextStyle(fontSize: 14, color: Colors.grey[500]),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showSearchDialog(BuildContext context) {
-    final controller = TextEditingController();
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Search Events'),
-        content: TextField(
-          controller: controller,
-          decoration: const InputDecoration(
-            hintText: 'Enter event title or description...',
-            prefixIcon: Icon(Icons.search),
-          ),
-          autofocus: true,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              if (controller.text.isNotEmpty) {
-                ref.read(eventProvider.notifier).searchEvents(controller.text);
-              }
-              Navigator.of(context).pop();
-            },
-            child: const Text('Search'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _navigateToSettings(BuildContext context) {
-    // TODO: Navigate to settings page
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Settings page coming soon!')));
-  }
-
-  void _addEvent(BuildContext context) {
-    // TODO: Navigate to add/edit event page
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Add event page coming soon!')),
-    );
-  }
-
-  void _showEventDetails(BuildContext context, event) {
-    // TODO: Show event details
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text('Event details for ${event.title}')));
-  }
-
-  void _editEvent(BuildContext context, event) {
-    // TODO: Navigate to edit event page
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text('Edit ${event.title}')));
-  }
-
-  void _deleteEvent(BuildContext context, event) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Event'),
-        content: Text('Are you sure you want to delete "${event.title}"?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              ref.read(eventProvider.notifier).deleteEvent(event.id);
-              Navigator.of(context).pop();
-              ScaffoldMessenger.of(
-                context,
-              ).showSnackBar(const SnackBar(content: Text('Event deleted')));
-            },
-            child: const Text('Delete', style: TextStyle(color: Colors.red)),
-          ),
-        ],
+        onPressed: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) =>
+                  AddEventPage(event: null, initialDate: _selectedDay),
+            ),
+          );
+        },
       ),
     );
   }

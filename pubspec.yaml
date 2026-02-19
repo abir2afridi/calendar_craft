@@ -1,6 +1,6 @@
 name: calendar_craft
 description: "A modern, scalable calendar and event management application built with Flutter and clean architecture."
-publish_to: 'none'
+publish_to: "none"
 version: 1.0.0+1
 
 environment:
@@ -10,7 +10,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  
+
   # State Management
   flutter_riverpod: ^2.4.9
   riverpod_annotation: ^2.3.3
@@ -21,6 +21,11 @@ dependencies:
 
   # Calendar UI
   table_calendar: ^3.0.9
+
+  # Firebase
+  firebase_core: ^3.10.1
+  cloud_firestore: ^5.6.2
+  firebase_auth: ^5.5.1
 
   # Notifications
   flutter_local_notifications: ^17.2.3
@@ -54,7 +59,7 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^4.0.0
-  
+
   # Code Generation
   build_runner: ^2.4.7
   riverpod_generator: ^2.3.9
@@ -63,7 +68,7 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
-  
+
   assets:
     - assets/images/
     - assets/icons/

@@ -1,6 +1,7 @@
-import 'package:equatable/equatable.dart';
-import 'package:json_annotation/json_annotation.dart';
+import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
+import 'package:json_annotation/json_annotation.dart';
+import 'package:equatable/equatable.dart';
 
 part 'event.g.dart';
 
@@ -22,8 +23,8 @@ enum EventPriority {
 }
 
 enum EventCategory {
-  work,
   personal,
+  work,
   health,
   education,
   entertainment,
@@ -33,10 +34,10 @@ enum EventCategory {
 
   String get displayName {
     switch (this) {
-      case EventCategory.work:
-        return 'Work';
       case EventCategory.personal:
         return 'Personal';
+      case EventCategory.work:
+        return 'Work';
       case EventCategory.health:
         return 'Health';
       case EventCategory.education:
@@ -54,10 +55,10 @@ enum EventCategory {
 
   String get color {
     switch (this) {
-      case EventCategory.work:
-        return '#2196F3'; // Blue
       case EventCategory.personal:
         return '#4CAF50'; // Green
+      case EventCategory.work:
+        return '#2196F3'; // Blue
       case EventCategory.health:
         return '#F44336'; // Red
       case EventCategory.education:
@@ -85,7 +86,7 @@ enum RepeatType {
   String get displayName {
     switch (this) {
       case RepeatType.none:
-        return 'No Repeat';
+        return 'None';
       case RepeatType.daily:
         return 'Daily';
       case RepeatType.weekly:
@@ -104,63 +105,48 @@ enum RepeatType {
 @JsonSerializable()
 class Event extends Equatable {
   @HiveField(0)
-  @JsonKey(name: 'id')
   final String id;
 
   @HiveField(1)
-  @JsonKey(name: 'title')
   final String title;
 
   @HiveField(2)
-  @JsonKey(name: 'description')
   final String? description;
 
   @HiveField(3)
-  @JsonKey(name: 'date')
   final DateTime date;
 
   @HiveField(4)
-  @JsonKey(name: 'start_time')
   final DateTime? startTime;
 
   @HiveField(5)
-  @JsonKey(name: 'end_time')
   final DateTime? endTime;
 
   @HiveField(6)
-  @JsonKey(name: 'is_all_day')
   final bool isAllDay;
 
   @HiveField(7)
-  @JsonKey(name: 'category')
   final EventCategory category;
 
   @HiveField(8)
-  @JsonKey(name: 'color')
-  final String color;
-
-  @HiveField(9)
-  @JsonKey(name: 'reminder_times')
-  final List<DateTime> reminderTimes;
-
-  @HiveField(10)
-  @JsonKey(name: 'repeat_type')
-  final RepeatType repeatType;
-
-  @HiveField(11)
-  @JsonKey(name: 'location')
-  final String? location;
-
-  @HiveField(12)
-  @JsonKey(name: 'priority')
   final EventPriority priority;
 
+  @HiveField(9)
+  final RepeatType repeatType;
+
+  @HiveField(10)
+  final String color;
+
+  @HiveField(11)
+  final List<DateTime> reminderTimes;
+
+  @HiveField(12)
+  final String? location;
+
   @HiveField(13)
-  @JsonKey(name: 'created_at')
   final DateTime createdAt;
 
   @HiveField(14)
-  @JsonKey(name: 'updated_at')
   final DateTime updatedAt;
 
   const Event({
@@ -170,13 +156,13 @@ class Event extends Equatable {
     required this.date,
     this.startTime,
     this.endTime,
-    required this.isAllDay,
-    required this.category,
-    required this.color,
-    required this.reminderTimes,
-    required this.repeatType,
+    this.isAllDay = false,
+    this.category = EventCategory.personal,
+    this.priority = EventPriority.medium,
+    this.repeatType = RepeatType.none,
+    this.color = '#2196F3',
+    this.reminderTimes = const [],
     this.location,
-    required this.priority,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -224,11 +210,11 @@ class Event extends Equatable {
     DateTime? endTime,
     bool? isAllDay,
     EventCategory? category,
+    EventPriority? priority,
+    RepeatType? repeatType,
     String? color,
     List<DateTime>? reminderTimes,
-    RepeatType? repeatType,
     String? location,
-    EventPriority? priority,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -241,11 +227,11 @@ class Event extends Equatable {
       endTime: endTime ?? this.endTime,
       isAllDay: isAllDay ?? this.isAllDay,
       category: category ?? this.category,
+      priority: priority ?? this.priority,
+      repeatType: repeatType ?? this.repeatType,
       color: color ?? this.color,
       reminderTimes: reminderTimes ?? this.reminderTimes,
-      repeatType: repeatType ?? this.repeatType,
       location: location ?? this.location,
-      priority: priority ?? this.priority,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? DateTime.now(),
     );
@@ -256,31 +242,38 @@ class Event extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        title,
-        description,
-        date,
-        startTime,
-        endTime,
-        isAllDay,
-        category,
-        color,
-        reminderTimes,
-        repeatType,
-        location,
-        priority,
-        createdAt,
-        updatedAt,
-      ];
+    id,
+    title,
+    description,
+    date,
+    startTime,
+    endTime,
+    isAllDay,
+    category,
+    color,
+    reminderTimes,
+    repeatType,
+    location,
+    priority,
+    createdAt,
+    updatedAt,
+  ];
 
   @override
   String toString() {
     return 'Event(id: $id, title: $title, date: $date)';
   }
 
+  Color get uiColor {
+    final hexCode = color.replaceFirst('#', '0xFF');
+    return Color(int.parse(hexCode));
+  }
+
   bool get isToday {
     final now = DateTime.now();
-    return date.year == now.year && date.month == now.month && date.day == now.day;
+    return date.year == now.year &&
+        date.month == now.month &&
+        date.day == now.day;
   }
 
   bool get isPast {
@@ -305,7 +298,7 @@ class Event extends Equatable {
 
   String get timeDisplay {
     if (isAllDay) return 'All day';
-    
+
     if (startTime != null && endTime != null) {
       final start = _formatTime(startTime!);
       final end = _formatTime(endTime!);
