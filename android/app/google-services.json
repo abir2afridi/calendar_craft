@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "831225487218",
+    "project_id": "calendar2craft",
+    "storage_bucket": "calendar2craft.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:831225487218:android:8b5052d5fe5842b4aac7eb",
+        "android_client_info": {
+          "package_name": "com.abir2afridi.calendarcraft"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyATnj-KNy0PDSgWTIAmL5zsJcnCdcZbZpI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

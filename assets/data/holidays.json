@@ -1,0 +1,82 @@
+[
+  {
+    "id": "new_years_day",
+    "name": "New Year's Day",
+    "date": "2024-01-01T00:00:00.000Z",
+    "type": "national",
+    "country": "US",
+    "description": "Celebration of New Year"
+  },
+  {
+    "id": "martin_luther_king_jr_day",
+    "name": "Martin Luther King Jr. Day",
+    "date": "2024-01-15T00:00:00.000Z",
+    "type": "national",
+    "country": "US",
+    "description": "Honors civil rights leader Martin Luther King Jr."
+  },
+  {
+    "id": "presidents_day",
+    "name": "Presidents' Day",
+    "date": "2024-02-19T00:00:00.000Z",
+    "type": "national",
+    "country": "US",
+    "description": "Honors all U.S. presidents"
+  },
+  {
+    "id": "memorial_day",
+    "name": "Memorial Day",
+    "date": "2024-05-27T00:00:00.000Z",
+    "type": "national",
+    "country": "US",
+    "description": "Honors military personnel who died in service"
+  },
+  {
+    "id": "independence_day",
+    "name": "Independence Day",
+    "date": "2024-07-04T00:00:00.000Z",
+    "type": "national",
+    "country": "US",
+    "description": "Celebration of American independence"
+  },
+  {
+    "id": "labor_day",
+    "name": "Labor Day",
+    "date": "2024-09-02T00:00:00.000Z",
+    "type": "national",
+    "country": "US",
+    "description": "Honors American labor movement"
+  },
+  {
+    "id": "columbus_day",
+    "name": "Columbus Day",
+    "date": "2024-10-14T00:00:00.000Z",
+    "type": "national",
+    "country": "US",
+    "description": "Commemorates arrival of Christopher Columbus"
+  },
+  {
+    "id": "veterans_day",
+    "name": "Veterans Day",
+    "date": "2024-11-11T00:00:00.000Z",
+    "type": "national",
+    "country": "US",
+    "description": "Honors military veterans"
+  },
+  {
+    "id": "thanksgiving_day",
+    "name": "Thanksgiving Day",
+    "date": "2024-11-28T00:00:00.000Z",
+    "type": "national",
+    "country": "US",
+    "description": "Day of giving thanks"
+  },
+  {
+    "id": "christmas_day",
+    "name": "Christmas Day",
+    "date": "2024-12-25T00:00:00.000Z",
+    "type": "national",
+    "country": "US",
+    "description": "Celebration of birth of Jesus Christ"
+  }
+]

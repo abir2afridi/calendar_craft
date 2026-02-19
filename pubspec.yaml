@@ -1,19 +1,70 @@
 name: calendar_craft
-description: "A new Flutter project."
+description: "A modern, scalable calendar and event management application built with Flutter and clean architecture."
 publish_to: 'none'
-version: 0.1.0
+version: 1.0.0+1
 
 environment:
   sdk: ^3.10.7
+  flutter: ">=3.10.0"
 
 dependencies:
   flutter:
     sdk: flutter
+  
+  # State Management
+  flutter_riverpod: ^2.4.9
+  riverpod_annotation: ^2.3.3
+
+  # Local Database
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
+
+  # Calendar UI
+  table_calendar: ^3.0.9
+
+  # Notifications
+  flutter_local_notifications: ^17.2.3
+  timezone: ^0.9.2
+
+  # Permissions
+  permission_handler: ^11.1.0
+
+  # Date & Time
+  intl: ^0.19.0
+
+  # File Operations
+  path_provider: ^2.1.1
+  # file_picker: ^6.1.1
+  share_plus: ^7.2.1
+
+  # UI Components
+  flutter_colorpicker: ^1.0.3
+  flutter_staggered_animations: ^1.1.1
+
+  # Utilities
+  uuid: ^4.2.1
+  equatable: ^2.0.5
+  json_annotation: ^4.8.1
+
+  # Icons
+  cupertino_icons: ^1.0.6
+  material_symbols_icons: ^4.2719.3
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^6.0.0
+  flutter_lints: ^4.0.0
+  
+  # Code Generation
+  build_runner: ^2.4.7
+  riverpod_generator: ^2.3.9
+  hive_generator: ^2.0.1
+  json_serializable: ^6.7.1
 
 flutter:
   uses-material-design: true
+  
+  assets:
+    - assets/images/
+    - assets/icons/
+    - assets/data/
