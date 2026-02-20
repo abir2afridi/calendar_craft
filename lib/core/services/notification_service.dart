@@ -120,6 +120,19 @@ class NotificationService {
     }
   }
 
+  Future<void> refreshCountdownNotifications(List<Event> events) async {
+    final now = DateTime.now();
+    for (final event in events) {
+      if (event.isCompleted) continue;
+
+      final target = event.startTime ?? event.date;
+      if (target.isAfter(now)) {
+        // Refresh only the next relevant reminder
+        await scheduleEventNotification(event);
+      }
+    }
+  }
+
   Future<void> _scheduleSingleNotification(
     Event event,
     DateTime reminderTime,
@@ -131,9 +144,14 @@ class NotificationService {
             ) // Schedule for 5 seconds from now if time is in the past
           : reminderTime;
 
+      final remainingDays = event.date.difference(DateTime.now()).inDays;
+      final countdownTitle = remainingDays > 0
+          ? '[$remainingDays days left] ${event.title}'
+          : 'Event Reminder: ${event.title}';
+
       await _flutterLocalNotificationsPlugin.zonedSchedule(
         _generateNotificationId(event.id, reminderTime),
-        'Event Reminder: ${event.title}',
+        countdownTitle,
         _buildNotificationBody(event),
         tz.TZDateTime.from(scheduledTime, tz.local),
         const NotificationDetails(
@@ -160,6 +178,99 @@ class NotificationService {
     } catch (e) {
       debugPrint('Failed to schedule single notification: $e');
     }
+  }
+
+  Future<void> scheduleGreetingNotifications() async {
+    if (!_isInitialized) await init();
+
+    try {
+      // IDs for greetings: Morning: 1001, Afternoon: 1002, Evening: 1003, Night: 1004
+
+      // Good Morning: 5:00 AM
+      await _scheduleDailyNotification(
+        1001,
+        '🌅 Good Morning',
+        'Start your day with purpose. Check your agenda!',
+        5,
+        0,
+      );
+
+      // Good Afternoon: 12:00 PM
+      await _scheduleDailyNotification(
+        1002,
+        '☀️ Good Afternoon',
+        'Halfway through! How is your progress?',
+        12,
+        0,
+      );
+
+      // Good Evening: 5:00 PM
+      await _scheduleDailyNotification(
+        1003,
+        '🌇 Good Evening',
+        'Winding down? Review your achievements.',
+        17,
+        0,
+      );
+
+      // Good Night: 9:00 PM
+      await _scheduleDailyNotification(
+        1004,
+        '🌙 Good Night',
+        'Rest well. Your manifest is ready for tomorrow.',
+        21,
+        0,
+      );
+
+      debugPrint('Greeting notifications scheduled');
+    } catch (e) {
+      debugPrint('Failed to schedule greeting notifications: $e');
+    }
+  }
+
+  Future<void> _scheduleDailyNotification(
+    int id,
+    String title,
+    String body,
+    int hour,
+    int minute,
+  ) async {
+    final now = tz.TZDateTime.now(tz.local);
+    var scheduledDate = tz.TZDateTime(
+      tz.local,
+      now.year,
+      now.month,
+      now.day,
+      hour,
+      minute,
+    );
+
+    if (scheduledDate.isBefore(now)) {
+      scheduledDate = scheduledDate.add(const Duration(days: 1));
+    }
+
+    await _flutterLocalNotificationsPlugin.zonedSchedule(
+      id,
+      title,
+      body,
+      scheduledDate,
+      const NotificationDetails(
+        android: AndroidNotificationDetails(
+          'greetings_channel',
+          'Greetings',
+          channelDescription:
+              'Time-based morning, afternoon, and evening greetings',
+          importance: Importance.low,
+          priority: Priority.low,
+          icon: '@mipmap/ic_launcher',
+        ),
+        iOS: DarwinNotificationDetails(),
+      ),
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      uiLocalNotificationDateInterpretation:
+          UILocalNotificationDateInterpretation.absoluteTime,
+      matchDateTimeComponents: DateTimeComponents.time,
+    );
   }
 
   String _buildNotificationBody(Event event) {
@@ -210,7 +321,7 @@ class NotificationService {
 
       debugPrint('Cancelled notifications for event: $eventId');
     } catch (e) {
-      print('Failed to cancel event notifications: $e');
+      debugPrint('Failed to cancel event notifications: $e');
     }
   }
 
@@ -219,7 +330,7 @@ class NotificationService {
       await _flutterLocalNotificationsPlugin.cancelAll();
       debugPrint('All notifications cancelled');
     } catch (e) {
-      print('Failed to cancel all notifications: $e');
+      debugPrint('Failed to cancel all notifications: $e');
     }
   }
 

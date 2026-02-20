@@ -6,6 +6,8 @@ import '../../domain/models/event.dart';
 import '../../domain/models/holiday.dart';
 import 'hive_adapters.dart';
 
+import 'package:calendar_craft/core/services/firestore_service.dart';
+
 class HiveService {
   static const String _eventsBoxName = AppConstants.eventsBoxName;
   static const String _holidaysBoxName = AppConstants.holidaysBoxName;
@@ -238,7 +240,10 @@ class HiveService {
     try {
       final box = await Hive.openBox(_settingsBoxName);
       await box.put(key, value);
-      debugPrint('Setting saved: $key');
+      debugPrint('Setting saved locally: $key');
+
+      // Sync with cloud
+      await FirestoreService().saveSetting(key, value);
     } catch (e) {
       debugPrint('Failed to save setting: $e');
       rethrow;

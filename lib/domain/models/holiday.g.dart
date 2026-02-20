@@ -21,15 +21,16 @@ class HolidayAdapter extends TypeAdapter<Holiday> {
       name: fields[1] as String,
       date: fields[2] as DateTime,
       type: fields[3] as String,
-      country: fields[4] as String,
+      countryCode: fields[4] as String,
       description: fields[5] as String?,
+      color: fields[6] as String,
     );
   }
 
   @override
   void write(BinaryWriter writer, Holiday obj) {
     writer
-      ..writeByte(6)
+      ..writeByte(7)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -39,9 +40,11 @@ class HolidayAdapter extends TypeAdapter<Holiday> {
       ..writeByte(3)
       ..write(obj.type)
       ..writeByte(4)
-      ..write(obj.country)
+      ..write(obj.countryCode)
       ..writeByte(5)
-      ..write(obj.description);
+      ..write(obj.description)
+      ..writeByte(6)
+      ..write(obj.color);
   }
 
   @override
@@ -64,8 +67,9 @@ Holiday _$HolidayFromJson(Map<String, dynamic> json) => Holiday(
       name: json['name'] as String,
       date: DateTime.parse(json['date'] as String),
       type: json['type'] as String,
-      country: json['country'] as String,
+      countryCode: json['countryCode'] as String,
       description: json['description'] as String?,
+      color: json['color'] as String? ?? '#FF5252',
     );
 
 Map<String, dynamic> _$HolidayToJson(Holiday instance) => <String, dynamic>{
@@ -73,6 +77,7 @@ Map<String, dynamic> _$HolidayToJson(Holiday instance) => <String, dynamic>{
       'name': instance.name,
       'date': instance.date.toIso8601String(),
       'type': instance.type,
-      'country': instance.country,
+      'countryCode': instance.countryCode,
       'description': instance.description,
+      'color': instance.color,
     };

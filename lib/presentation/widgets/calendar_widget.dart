@@ -1,9 +1,14 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:calendar_craft/domain/models/event.dart';
 import 'package:calendar_craft/presentation/providers/event_provider.dart';
 import 'package:calendar_craft/presentation/providers/theme_provider.dart';
+import 'package:calendar_craft/presentation/providers/holiday_provider.dart';
+import 'package:calendar_craft/domain/models/holiday.dart';
+import 'package:intl/intl.dart';
 
 class CalendarWidget extends ConsumerWidget {
   final DateTime focusedDay;
@@ -25,18 +30,43 @@ class CalendarWidget extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final eventsForMonth = ref.watch(eventsForMonthProvider(focusedDay));
+    final events = ref.watch(eventsForMonthProvider(focusedDay));
+    final holidayState = ref.watch(holidayProvider);
+    final holidays = ref.watch(holidaysForMonthProvider(focusedDay));
     final visualTheme = ref.watch(visualThemeProvider);
+    final colorScheme = Theme.of(context).colorScheme;
 
-    return Card(
-      margin: const EdgeInsets.all(16),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: eventsForMonth.when(
-          data: (events) => _buildCalendar(context, events, visualTheme),
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (error, stack) =>
-              Center(child: Text('Error loading calendar: $error')),
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(32),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+          child: Container(
+            padding: const EdgeInsets.only(bottom: 16),
+            decoration: BoxDecoration(
+              color: colorScheme.surface.withValues(alpha: 0.8),
+              borderRadius: BorderRadius.circular(32),
+              border: Border.all(
+                color: colorScheme.outlineVariant.withValues(alpha: 0.2),
+                width: 1.5,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 30,
+                  offset: const Offset(0, 15),
+                ),
+              ],
+            ),
+            child: _buildCalendar(
+              context,
+              events,
+              holidays,
+              holidayState.countryName,
+              visualTheme,
+            ),
+          ),
         ),
       ),
     );
@@ -45,9 +75,11 @@ class CalendarWidget extends ConsumerWidget {
   Widget _buildCalendar(
     BuildContext context,
     List<Event> events,
+    List<Holiday> holidays,
+    String? countryName,
     VisualTheme style,
   ) {
-    final primaryColor = Theme.of(context).primaryColor;
+    final colorScheme = Theme.of(context).colorScheme;
 
     return TableCalendar(
       firstDay: DateTime.utc(2020, 1, 1),
@@ -55,186 +87,198 @@ class CalendarWidget extends ConsumerWidget {
       focusedDay: focusedDay,
       selectedDayPredicate: (day) => isSameDay(selectedDay, day),
       calendarFormat: calendarFormat,
-      eventLoader: (day) =>
-          events.where((e) => isSameDay(e.date, day)).toList(),
-      onDaySelected: onDaySelected,
+      eventLoader: (day) {
+        final dayEvents = events.where((e) => isSameDay(e.date, day)).toList();
+        final dayHolidays = holidays
+            .where((h) => isSameDay(h.date, day))
+            .toList();
+        return [...dayEvents, ...dayHolidays];
+      },
+      onDaySelected: (selectedDay, focusedDay) {
+        HapticFeedback.lightImpact();
+        onDaySelected(selectedDay, focusedDay);
+      },
       onFormatChanged: onFormatChanged,
       onPageChanged: onPageChanged,
-      startingDayOfWeek: StartingDayOfWeek.sunday,
+      startingDayOfWeek: StartingDayOfWeek.monday,
+      rowHeight: 52,
       headerStyle: HeaderStyle(
-        formatButtonVisible: style != VisualTheme.cyber,
         titleCentered: true,
+        formatButtonVisible: true,
         formatButtonShowsNext: false,
+        leftChevronIcon: _buildChevron(context, Icons.chevron_left_rounded),
+        rightChevronIcon: _buildChevron(context, Icons.chevron_right_rounded),
         titleTextStyle: TextStyle(
-          fontSize: style == VisualTheme.cyber ? 22 : 18,
-          fontWeight: FontWeight.bold,
-          color: style == VisualTheme.cyber ? primaryColor : null,
-          letterSpacing: style == VisualTheme.cyber ? 2 : null,
+          fontSize: 18,
+          fontWeight: FontWeight.w900,
+          color: colorScheme.onSurface,
+          letterSpacing: -0.5,
         ),
         formatButtonDecoration: BoxDecoration(
-          color: primaryColor,
-          borderRadius: BorderRadius.circular(
-            style == VisualTheme.bento ? 20 : 8,
-          ),
+          color: colorScheme.primary,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: colorScheme.primary.withValues(alpha: 0.3),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        formatButtonTextStyle: TextStyle(
+          color: colorScheme.onPrimary,
+          fontWeight: FontWeight.w900,
+          fontSize: 10,
+          letterSpacing: 1,
+        ),
+      ),
+      daysOfWeekStyle: DaysOfWeekStyle(
+        weekdayStyle: TextStyle(
+          color: colorScheme.outline.withValues(alpha: 0.5),
+          fontWeight: FontWeight.w900,
+          fontSize: 11,
+          letterSpacing: 0.5,
+        ),
+        weekendStyle: TextStyle(
+          color: Colors.redAccent.withValues(alpha: 0.4),
+          fontWeight: FontWeight.w900,
+          fontSize: 11,
+          letterSpacing: 0.5,
         ),
       ),
       calendarStyle: CalendarStyle(
+        outsideDaysVisible: true,
         todayDecoration: BoxDecoration(
-          color: primaryColor.withOpacity(0.3),
-          shape: style == VisualTheme.cyber
-              ? BoxShape.rectangle
-              : BoxShape.circle,
-          borderRadius: style == VisualTheme.cyber
-              ? BorderRadius.circular(4)
-              : null,
+          color: colorScheme.primary.withValues(alpha: 0.1),
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: colorScheme.primary.withValues(alpha: 0.2),
+            width: 1.5,
+          ),
+        ),
+        todayTextStyle: TextStyle(
+          color: colorScheme.primary,
+          fontWeight: FontWeight.w900,
         ),
         selectedDecoration: BoxDecoration(
-          color: primaryColor,
-          shape: style == VisualTheme.cyber
-              ? BoxShape.rectangle
-              : BoxShape.circle,
-          borderRadius: style == VisualTheme.cyber
-              ? BorderRadius.circular(4)
-              : null,
-          boxShadow: style == VisualTheme.cyber
-              ? [
-                  BoxShadow(
-                    color: primaryColor.withOpacity(0.6),
-                    blurRadius: 10,
-                  ),
-                ]
-              : null,
-        ),
-        markerDecoration: BoxDecoration(
-          color: style == VisualTheme.cyber ? Colors.white : Colors.red,
+          gradient: LinearGradient(
+            colors: [colorScheme.primary, colorScheme.secondary],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
           shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: colorScheme.primary.withValues(alpha: 0.4),
+              blurRadius: 12,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        markerDecoration: const BoxDecoration(color: Colors.transparent),
+        defaultTextStyle: TextStyle(
+          fontWeight: FontWeight.w700,
+          color: colorScheme.onSurface,
+        ),
+        weekendTextStyle: const TextStyle(
+          fontWeight: FontWeight.w700,
+          color: Colors.redAccent,
+        ),
+        outsideTextStyle: TextStyle(
+          color: colorScheme.onSurface.withValues(alpha: 0.2),
+          fontWeight: FontWeight.w500,
         ),
       ),
       calendarBuilders: CalendarBuilders(
-        markerBuilder: (context, day, events) {
-          if (events.isEmpty) return const SizedBox();
-          return Positioned(
-            bottom: 4,
-            child: _buildMarkers(events.length, style),
+        headerTitleBuilder: (context, date) {
+          final monthYear = DateFormat.yMMMM().format(date);
+          return Column(
+            children: [
+              Text(
+                monthYear.toUpperCase(),
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 1,
+                  color: colorScheme.onSurface,
+                ),
+              ),
+              if (countryName != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Text(
+                    countryName.toUpperCase(),
+                    style: TextStyle(
+                      fontSize: 8,
+                      fontWeight: FontWeight.w900,
+                      color: colorScheme.primary.withValues(alpha: 0.6),
+                      letterSpacing: 2.5,
+                    ),
+                  ),
+                ),
+            ],
           );
         },
-        defaultBuilder: (context, day, focusedDay) =>
-            _buildDayCell(context, day, focusedDay, false, style),
-        selectedBuilder: (context, day, focusedDay) =>
-            _buildDayCell(context, day, focusedDay, true, style),
-        todayBuilder: (context, day, focusedDay) => _buildDayCell(
-          context,
-          day,
-          focusedDay,
-          false,
-          style,
-          isToday: true,
-        ),
-      ),
-    );
-  }
+        markerBuilder: (context, date, items) {
+          if (items.isEmpty) return null;
 
-  Widget _buildDayCell(
-    BuildContext context,
-    DateTime day,
-    DateTime focusedDay,
-    bool isSelected,
-    VisualTheme style, {
-    bool isToday = false,
-  }) {
-    final primaryColor = Theme.of(context).primaryColor;
-    final isWeekend = day.weekday == 6 || day.weekday == 7;
+          final dayEvents = items.whereType<Event>().toList();
+          final dayHolidays = items.whereType<Holiday>().toList();
 
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
-      margin: const EdgeInsets.all(4),
-      decoration: style == VisualTheme.cyber
-          ? BoxDecoration(
-              borderRadius: BorderRadius.circular(4),
-              color: isSelected ? primaryColor : null,
-              border: Border.all(
-                color: isSelected
-                    ? primaryColor
-                    : isToday
-                    ? primaryColor.withOpacity(0.5)
-                    : Colors.transparent,
-              ),
-              boxShadow: isSelected
-                  ? [
-                      BoxShadow(
-                        color: primaryColor.withOpacity(0.4),
-                        blurRadius: 8,
+          return Positioned(
+            bottom: 6,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (dayHolidays.isNotEmpty)
+                  Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 2),
+                    width: 12,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.redAccent,
+                      borderRadius: BorderRadius.circular(2),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.redAccent.withValues(alpha: 0.4),
+                          blurRadius: 4,
+                        ),
+                      ],
+                    ),
+                  ),
+                ...dayEvents
+                    .take(2)
+                    .map(
+                      (event) => Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 1.5),
+                        width: 5,
+                        height: 5,
+                        decoration: BoxDecoration(
+                          color: event.uiColor,
+                          shape: BoxShape.circle,
+                        ),
                       ),
-                    ]
-                  : null,
-            )
-          : BoxDecoration(
-              shape: style == VisualTheme.bento
-                  ? BoxShape.rectangle
-                  : BoxShape.circle,
-              borderRadius: style == VisualTheme.bento
-                  ? BorderRadius.circular(12)
-                  : null,
-              color: isSelected
-                  ? primaryColor
-                  : isToday
-                  ? primaryColor.withOpacity(0.2)
-                  : null,
+                    ),
+              ],
             ),
-      child: Center(
-        child: Text(
-          '${day.day}',
-          style: TextStyle(
-            color: isSelected
-                ? Colors.white
-                : isWeekend
-                ? (style == VisualTheme.cyber ? Colors.pinkAccent : Colors.red)
-                : null,
-            fontWeight: isSelected || isToday
-                ? FontWeight.bold
-                : FontWeight.normal,
-            fontSize: style == VisualTheme.cyber ? 16 : 14,
-            shadows: isSelected && style == VisualTheme.cyber
-                ? [const Shadow(color: Colors.white, blurRadius: 8)]
-                : null,
-          ),
-        ),
+          );
+        },
       ),
     );
   }
 
-  Widget _buildMarkers(int eventCount, VisualTheme style) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: List.generate(
-        eventCount.clamp(0, 3),
-        (index) => Container(
-          margin: const EdgeInsets.symmetric(horizontal: 1),
-          width: style == VisualTheme.cyber ? 4 : 6,
-          height: style == VisualTheme.cyber ? 4 : 6,
-          decoration: BoxDecoration(
-            color: style == VisualTheme.cyber
-                ? const Color(0xFF00F2FF)
-                : _getEventColor(index),
-            shape: BoxShape.circle,
-            boxShadow: style == VisualTheme.cyber
-                ? [const BoxShadow(color: Color(0xFF00F2FF), blurRadius: 4)]
-                : null,
-          ),
+  Widget _buildChevron(BuildContext context, IconData icon) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: colorScheme.onSurface.withValues(alpha: 0.04),
+        shape: BoxShape.circle,
+        border: Border.all(
+          color: colorScheme.outlineVariant.withValues(alpha: 0.1),
         ),
       ),
+      child: Icon(icon, color: colorScheme.onSurface, size: 18),
     );
-  }
-
-  Color _getEventColor(int index) {
-    const colors = [
-      Colors.blue,
-      Colors.green,
-      Colors.orange,
-      Colors.purple,
-      Colors.red,
-      Colors.teal,
-    ];
-    return colors[index % colors.length];
   }
 }

@@ -32,13 +32,16 @@ class EventAdapter extends TypeAdapter<Event> {
       location: fields[12] as String?,
       createdAt: fields[13] as DateTime,
       updatedAt: fields[14] as DateTime,
+      isSyncPending: fields[15] == null ? true : fields[15] as bool,
+      lastSyncedAt: fields[16] as DateTime?,
+      isCompleted: fields[17] == null ? false : fields[17] as bool,
     );
   }
 
   @override
   void write(BinaryWriter writer, Event obj) {
     writer
-      ..writeByte(15)
+      ..writeByte(18)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -68,7 +71,13 @@ class EventAdapter extends TypeAdapter<Event> {
       ..writeByte(13)
       ..write(obj.createdAt)
       ..writeByte(14)
-      ..write(obj.updatedAt);
+      ..write(obj.updatedAt)
+      ..writeByte(15)
+      ..write(obj.isSyncPending)
+      ..writeByte(16)
+      ..write(obj.lastSyncedAt)
+      ..writeByte(17)
+      ..write(obj.isCompleted);
   }
 
   @override
@@ -113,6 +122,11 @@ Event _$EventFromJson(Map<String, dynamic> json) => Event(
       location: json['location'] as String?,
       createdAt: DateTime.parse(json['createdAt'] as String),
       updatedAt: DateTime.parse(json['updatedAt'] as String),
+      isSyncPending: json['isSyncPending'] as bool? ?? true,
+      lastSyncedAt: json['lastSyncedAt'] == null
+          ? null
+          : DateTime.parse(json['lastSyncedAt'] as String),
+      isCompleted: json['isCompleted'] as bool? ?? false,
     );
 
 Map<String, dynamic> _$EventToJson(Event instance) => <String, dynamic>{
@@ -132,6 +146,9 @@ Map<String, dynamic> _$EventToJson(Event instance) => <String, dynamic>{
       'location': instance.location,
       'createdAt': instance.createdAt.toIso8601String(),
       'updatedAt': instance.updatedAt.toIso8601String(),
+      'isSyncPending': instance.isSyncPending,
+      'lastSyncedAt': instance.lastSyncedAt?.toIso8601String(),
+      'isCompleted': instance.isCompleted,
     };
 
 const _$EventCategoryEnumMap = {
@@ -142,6 +159,7 @@ const _$EventCategoryEnumMap = {
   EventCategory.entertainment: 'entertainment',
   EventCategory.social: 'social',
   EventCategory.travel: 'travel',
+  EventCategory.birthday: 'birthday',
   EventCategory.other: 'other',
 };
 

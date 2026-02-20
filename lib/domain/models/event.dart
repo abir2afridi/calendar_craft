@@ -30,6 +30,7 @@ enum EventCategory {
   entertainment,
   social,
   travel,
+  birthday,
   other;
 
   String get displayName {
@@ -48,6 +49,8 @@ enum EventCategory {
         return 'Social';
       case EventCategory.travel:
         return 'Travel';
+      case EventCategory.birthday:
+        return 'Birthday';
       case EventCategory.other:
         return 'Other';
     }
@@ -69,6 +72,8 @@ enum EventCategory {
         return '#E91E63'; // Pink
       case EventCategory.travel:
         return '#00BCD4'; // Cyan
+      case EventCategory.birthday:
+        return '#FF6B9D'; // Pink Rose
       case EventCategory.other:
         return '#607D8B'; // Blue Grey
     }
@@ -149,6 +154,15 @@ class Event extends Equatable {
   @HiveField(14)
   final DateTime updatedAt;
 
+  @HiveField(15, defaultValue: true)
+  final bool isSyncPending;
+
+  @HiveField(16)
+  final DateTime? lastSyncedAt;
+
+  @HiveField(17, defaultValue: false)
+  final bool isCompleted;
+
   const Event({
     required this.id,
     required this.title,
@@ -165,6 +179,9 @@ class Event extends Equatable {
     this.location,
     required this.createdAt,
     required this.updatedAt,
+    this.isSyncPending = true,
+    this.lastSyncedAt,
+    this.isCompleted = false,
   });
 
   factory Event.create({
@@ -198,6 +215,8 @@ class Event extends Equatable {
       priority: priority,
       createdAt: now,
       updatedAt: now,
+      isSyncPending: true,
+      isCompleted: false,
     );
   }
 
@@ -217,6 +236,9 @@ class Event extends Equatable {
     String? location,
     DateTime? createdAt,
     DateTime? updatedAt,
+    bool? isSyncPending,
+    DateTime? lastSyncedAt,
+    bool? isCompleted,
   }) {
     return Event(
       id: id ?? this.id,
@@ -234,6 +256,9 @@ class Event extends Equatable {
       location: location ?? this.location,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? DateTime.now(),
+      isSyncPending: isSyncPending ?? this.isSyncPending,
+      lastSyncedAt: lastSyncedAt ?? this.lastSyncedAt,
+      isCompleted: isCompleted ?? this.isCompleted,
     );
   }
 
@@ -257,6 +282,9 @@ class Event extends Equatable {
     priority,
     createdAt,
     updatedAt,
+    isSyncPending,
+    lastSyncedAt,
+    isCompleted,
   ];
 
   @override

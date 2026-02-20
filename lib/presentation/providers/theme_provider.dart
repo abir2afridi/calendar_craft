@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter/foundation.dart';
+
 import 'package:calendar_craft/core/services/hive_service.dart';
 import 'package:calendar_craft/core/constants/app_constants.dart';
 
@@ -165,7 +165,7 @@ ThemeData getThemeData(bool isDark, VisualTheme style) {
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(4),
-          side: BorderSide(color: seedColor.withOpacity(0.5), width: 1),
+          side: BorderSide(color: seedColor.withValues(alpha: 0.5), width: 1),
         ),
       ),
       appBarTheme: AppBarTheme(
